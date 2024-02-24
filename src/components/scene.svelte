@@ -1,8 +1,12 @@
 <script>
 	export let scene;
+	export let state;
 	export let live = false;
 	import { connectionMode, currentConnectionStatus, ConnectionStatusEnum, oscConfig } from "../lib/stores";
 	import MeterCanvas from "./meterCanvas.svelte";
+	import { createEventDispatcher } from "svelte";
+	
+	const dispatch = createEventDispatcher();
 </script>
 
 <div class="scene" class:live>
@@ -25,7 +29,24 @@
 				>
 					<!-- <div class="channelMeter" style:height={`calc(100% * ${$channelMeters[i - 1]})`} /> -->
 					<MeterCanvas channel={i} />
-					<h3 style="font-weight: 400; text-overflow: clip;">{i}</h3>
+					<div class="channel-headings">
+						<h3 style="font-weight: 400; text-overflow: clip;">{i}</h3>
+						<button
+							class="emergency-mute"
+							class:active={$state.forceMute[i]}
+							class:inactive={!$state.forceMute[i]}
+							on:click={() => {
+								$state.forceMute[i] = !$state.forceMute[i];
+								dispatch("forceMuteToggle", { channel: i });
+							}}
+						>
+							{#if $state.forceMute[i]}
+								<box-icon name="volume-mute" color="currentColor"></box-icon>
+							{:else}
+								<box-icon name="volume-full" color="currentColor"></box-icon>
+							{/if}
+						</button>
+					</div>
 					<div>
 						<p
 							class="actorLabel"
@@ -61,6 +82,33 @@
 </div>
 
 <style lang="scss">
+	.channel-headings {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.emergency-mute {
+		padding: 0;
+		margin: 0;
+		border: none;
+		transition: color 0.3s;
+
+		box-icon {
+			margin: auto;
+		}
+
+		&.inactive {
+			color: transparent;
+			&:hover {
+				color: #ff00007f;
+			}
+		}
+
+		&.active {
+			color: #ff0000;
+		}
+	}
+
 	.scene {
 		display: grid;
 		grid-template-columns: 4fr 1fr;
@@ -102,7 +150,7 @@
 		min-width: 0;
 		overflow: hidden;
 		transition: 120ms;
-		> h3,
+		h3,
 		p {
 			white-space: nowrap;
 			text-overflow: ellipsis;

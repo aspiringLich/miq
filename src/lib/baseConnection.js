@@ -7,10 +7,11 @@ export class BaseConnection {
 		currentConnectionStatus.set({ status: ConnectionStatusEnum.CONNECTING, address: null });
 	}
 
-	onFire(scene) {
+	onFire(scene, state) {
 		if (scene?.mics) {
 			const sendNum = Math.round(Math.min(Math.max(this.constructor.getCompleteConfig().resendNum || 0, 0), 4)) + 1;
 			console.log("sending", sendNum, "times");
+			console.log(state);
 
 			for (let sends = 0; sends < sendNum; sends++) {
 				Object.keys(scene.mics).forEach((channel) => {
@@ -18,8 +19,8 @@ export class BaseConnection {
 					if (mic)
 						this._fireChannel(
 							channel,
-							mic.active,
-							mic.character.startsWith("#") ? mic.actor : mic.character || mic.actor
+							state.forceMute[channel] ? false : mic.active,
+							mic.character.startsWith("#") ? mic.actor : mic.character || mic.actor,
 						);
 				});
 			}

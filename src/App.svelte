@@ -22,6 +22,7 @@
 	import { newConnection, connectionAddress } from "./lib/connectionUtil";
 	import { configs, sheets, ddp, loadExternalConfig, updateSheet } from "./lib/db";
 	import { connect, disconnect, getCompleteMqttConfig, incomingMessage, mqttClient } from "./lib/mqtt";
+	import { writable } from "svelte/store";
 
 	let loading = ["Loading..."];
 
@@ -55,6 +56,13 @@
 	let historyState = history.state;
 	$: if (scenes.length && scenes[previewIndex]?.name) {
 		history.replaceState(scenes[previewIndex].name, "");
+	}
+
+	let state;
+	function initMiqState() {
+		state = writable({
+			forceMute: {},
+		});
 	}
 
 	function regenerateScenes(selectedConfig, data) {
@@ -165,15 +173,16 @@
 				currentIndex = findNewIndex(
 					currentIndex, // old
 					updateData.oldCurrentName,
-					-1 // don't say we have some random thing fired
+					-1, // don't say we have some random thing fired
 				);
 				previewIndex = findNewIndex(
 					previewIndex, // old
-					updateData.oldPreviewName
+					updateData.oldPreviewName,
 				);
 
 				updateData = null;
 			}
+			initMiqState();
 		} else {
 			scenes = [];
 		}
@@ -201,7 +210,17 @@
 				inline: "center",
 			});
 		}
-		$currentConnection?.onFire(scenes[currentIndex]);
+		$currentConnection?.onFire(scenes[currentIndex], $state);
+	}
+
+	function refireChannel(i) {
+		let mic = scenes[currentIndex]?.mics[i];
+		if (mic)
+			$currentConnection?._fireChannel(
+				i,
+				$state.forceMute[i] ? false : mic.active,
+				mic.character.startsWith("#") ? mic.actor : mic.character || mic.actor,
+			);
 	}
 
 	$: sceneSelector?.querySelectorAll("button")[previewIndex]?.scrollIntoView({
@@ -237,7 +256,7 @@
 				"miq/" + $mqttConfig.topic + "/config",
 				JSON.stringify({ type: "config", data: config }),
 				0,
-				true
+				true,
 			);
 			//set will message to clear
 		}
@@ -250,7 +269,7 @@
 				"miq/" + $mqttConfig.topic,
 				JSON.stringify({ type: "index", data: { currentIndex, previewIndex } }),
 				0,
-				false
+				false,
 			);
 		}
 	}
@@ -387,8 +406,8 @@
 						$currentConnectionStatus.status === ConnectionStatusEnum.CONNECTED
 							? "green"
 							: $currentConnectionStatus.status === ConnectionStatusEnum.CONNECTING
-							? "yellow"
-							: "red"
+								? "yellow"
+								: "red"
 					})`}
 				>
 					<div class="iconlabel">
@@ -396,8 +415,8 @@
 							name={$currentConnectionStatus.status === ConnectionStatusEnum.CONNECTED
 								? "wifi"
 								: $currentConnectionStatus.status === ConnectionStatusEnum.CONNECTING
-								? "hourglass"
-								: "wifi-off"}
+									? "hourglass"
+									: "wifi-off"}
 							color="currentColor"
 							size="1em"
 						/>
@@ -411,8 +430,8 @@
 					>tap to {$currentConnectionStatus.status === ConnectionStatusEnum.CONNECTED
 						? "disconnect"
 						: $currentConnectionStatus.status === ConnectionStatusEnum.CONNECTING
-						? "stop connecting"
-						: "connect"}</span
+							? "stop connecting"
+							: "connect"}</span
 				>
 			</button>
 			{#if selectedConfig.sheetId && !selectedConfig.table && !rxActive}
@@ -482,8 +501,17 @@
 			{/each}
 		</div>
 		<div class="sceneview">
-			<Scene scene={scenes[previewIndex]} />
-			<Scene scene={scenes[currentIndex]} live />
+			<Scene
+				scene={scenes[previewIndex]}
+				state={state}
+				on:forceMuteToggle={(e) => refireChannel(e.detail.channel)}
+			/>
+			<Scene
+				scene={scenes[currentIndex]}
+				state={state}
+				on:forceMuteToggle={(e) => refireChannel(e.detail.channel)}
+				live
+			/>
 		</div>
 	</div>
 	<div class="buttons">
