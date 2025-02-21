@@ -41,9 +41,9 @@
 							}}
 						>
 							{#if $state.forceMute[i]}
-								<box-icon name="volume-mute" color="currentColor"></box-icon>
+								<box-icon name="microphone-off" color="currentColor"></box-icon>
 							{:else}
-								<box-icon name="volume-full" color="currentColor"></box-icon>
+								<box-icon name="microphone" color="currentColor"></box-icon>
 							{/if}
 						</button>
 					</div>
@@ -63,7 +63,7 @@
 								{/if}
 							</span>
 						</p>
-						<p class={scene?.mics[i]?.character?.startsWith("#") ? "smallLabel" : "bigLabel"}>
+						<p	 class={scene?.mics[i]?.character?.startsWith("#") ? "smallLabel" : "bigLabel"}>
 							{scene?.mics[i]?.character || ""}
 						</p>
 					</div>
