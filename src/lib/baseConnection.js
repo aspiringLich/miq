@@ -20,7 +20,7 @@ export class BaseConnection {
 						this._fireChannel(
 							channel,
 							state.forceMute[channel] ? false : mic.active,
-							mic.character.startsWith("#") ? mic.actor : mic.character || mic.actor,
+							mic.character.startsWith("#") ? mic.actor : mic.actor || mic.actor,
 						);
 				});
 			}
